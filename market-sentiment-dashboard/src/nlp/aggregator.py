@@ -79,6 +79,5 @@ def aggregate_sentiment(df: pd.DataFrame, ticker: str) -> dict:
         "source_breakdown": source_scores,
     }
 
-    logger.info(f"📊 {ticker} sentiment: {signal} (score: {overall_score})")
+    logger.info(f"{ticker} sentiment: {signal} (score: {overall_score})")
     return report
-

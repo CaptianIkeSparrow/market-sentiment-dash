@@ -49,7 +49,7 @@ def fetch_feed(source_name: str, url: str) -> list[dict]:
         return articles
 
     except Exception as e:
-        logger.error(f"❌ Failed to fetch {source_name}: {e}")
+        logger.error(f"Failed to fetch {source_name}: {e}")
         return []
 
 
@@ -70,7 +70,7 @@ def fetch_all_news() -> pd.DataFrame:
     df = df.drop_duplicates(subset=["url"])
     df = df.sort_values("fetched_at", ascending=False).reset_index(drop=True)
 
-    logger.info(f"📰 Total articles fetched: {len(df)}")
+    logger.info(f"Total articles fetched: {len(df)}")
     return df
 
 
@@ -90,5 +90,5 @@ def filter_by_ticker(df: pd.DataFrame, ticker: str, company_name: str = "") -> p
         )
 
     filtered = df[mask].reset_index(drop=True)
-    logger.info(f"🔍 Articles mentioning {ticker}: {len(filtered)}")
+    logger.info(f"Articles mentioning {ticker}: {len(filtered)}")
     return filtered

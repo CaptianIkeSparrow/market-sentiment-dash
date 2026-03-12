@@ -190,11 +190,11 @@ def generate_alert(
 
     severities = [sentiment_anomaly.severity, volume_anomaly.severity]
     if "severe" in severities:
-        level = "🔴 HIGH"
+        level = "HIGH"
     elif "moderate" in severities:
-        level = "🟡 MEDIUM"
+        level = "MEDIUM"
     else:
-        level = "🟢 LOW"
+        level = "LOW"
 
     return {
         "ticker": ticker,
@@ -203,4 +203,3 @@ def generate_alert(
         "alerts": alerts,
         "action": "Monitor closely" if "HIGH" in level else "Worth watching",
     }
-

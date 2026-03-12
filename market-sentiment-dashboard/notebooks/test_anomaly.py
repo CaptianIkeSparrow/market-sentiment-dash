@@ -74,7 +74,7 @@ if alert:
     print(f"Level: {alert['alert_level']}")
     print(f"Score: {alert['current_sentiment_score']}")
     for a in alert["alerts"]:
-        print(f"  ⚠️  {a}")
+        print(f"  - {a}")
     print(f"Action: {alert['action']}")
 else:
     print("✅ No anomalies detected — sentiment is within normal range")
@@ -82,4 +82,3 @@ else:
 print("\n--- Historical Context (last 7 days) ---")
 history_df = build_history_dataframe(TICKER, days=7)
 print(history_df[["date", "sentiment_score", "article_count"]].to_string(index=False))
-

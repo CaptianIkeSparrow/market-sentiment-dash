@@ -18,7 +18,7 @@ def fetch_stocktwits(ticker: str) -> pd.DataFrame:
         )
         if not response.ok:
             logger.error(
-                f"❌ Stocktwits {ticker}: HTTP {response.status_code} {response.reason}"
+                f"Stocktwits {ticker}: HTTP {response.status_code} {response.reason}"
             )
             return pd.DataFrame()
 
@@ -26,7 +26,7 @@ def fetch_stocktwits(ticker: str) -> pd.DataFrame:
             data = response.json()
         except Exception:
             snippet = response.text[:200].replace("\n", " ")
-            logger.error(f"❌ Stocktwits {ticker}: non-JSON response: {snippet!r}")
+            logger.error(f"Stocktwits {ticker}: non-JSON response: {snippet!r}")
             return pd.DataFrame()
 
         messages = data.get("messages", [])
@@ -55,7 +55,7 @@ def fetch_stocktwits(ticker: str) -> pd.DataFrame:
         return pd.DataFrame(results)
 
     except Exception as e:
-        logger.error(f"❌ Failed to fetch Stocktwits for {ticker}: {e}")
+        logger.error(f"Failed to fetch Stocktwits for {ticker}: {e}")
         return pd.DataFrame()
 
 
@@ -112,7 +112,7 @@ def fetch_finviz_news(ticker: str) -> pd.DataFrame:
         return df
 
     except Exception as e:
-        logger.error(f"❌ Failed to fetch Finviz news for {ticker}: {e}")
+        logger.error(f"Failed to fetch Finviz news for {ticker}: {e}")
         return pd.DataFrame()
 
 
@@ -133,5 +133,5 @@ def fetch_all_social(ticker: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     combined = pd.concat(dfs, ignore_index=True)
-    logger.info(f"💬 Total social signals for {ticker}: {len(combined)}")
+    logger.info(f"Total social signals for {ticker}: {len(combined)}")
     return combined

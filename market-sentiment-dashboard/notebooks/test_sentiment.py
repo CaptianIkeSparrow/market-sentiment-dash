@@ -18,11 +18,11 @@ print("=" * 50)
 print(f"Running sentiment pipeline for {TICKER}")
 print("=" * 50)
 
-print("\n📰 Fetching news...")
+print("\nFetching news...")
 news_df = fetch_all_news()
 news_df = filter_by_ticker(news_df, TICKER, company_name=COMPANY)
 
-print("💬 Fetching social data...")
+print("Fetching social data...")
 social_df = fetch_all_social(TICKER)
 
 all_df = pd.concat([news_df, social_df], ignore_index=True)
@@ -53,4 +53,3 @@ if not stocktwits.empty:
     matches = (stocktwits["sentiment"] == stocktwits["st_label"]).sum()
     accuracy = round(matches / len(stocktwits) * 100, 1)
     print(f"FinBERT agreement with user labels: {accuracy}%")
-
