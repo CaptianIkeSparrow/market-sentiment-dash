@@ -7,6 +7,7 @@ feedparser==6.0.10
 # Data processing
 pandas==2.1.0
 numpy==1.24.0
+scipy==1.11.0
 
 # NLP & ML
 transformers==4.38.0
