@@ -101,18 +101,11 @@ TICKER_MAP = {
     "RIOT": "Riot Platforms",
 }
 
-# Default watchlist. Edit this list to add/remove tickers.
+# ── Your personal watchlist ────────────────────────────────
+# Edit this list to change which tickers watchlist.py scans
 WATCHLIST = [
-    "NVDA",
-    "AAPL",
-    "TSLA",
-    "MSFT",
-    "AMZN",
-    "META",
-    "GOOGL",
-    "INTC",
-    "AMD",
-    "PLTR",
+    "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "META", "NVDA",
+    "TSLA"
 ]
 
 
@@ -126,7 +119,6 @@ def list_supported_tickers() -> None:
     print("\nSupported tickers:\n")
     for ticker, name in TICKER_MAP.items():
         print(f"  {ticker:<8} {name}")
-
 
 def get_watchlist() -> list[tuple[str, str]]:
     """

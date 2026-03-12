@@ -14,6 +14,22 @@ RSS_FEEDS = {
     "motley_fool": "https://www.fool.com/feeds/index.aspx",
 }
 
+# Common aliases to search for when RSS headlines don't mention the ticker explicitly.
+TICKER_ALIASES = {
+    "AAPL": ["Apple", "iPhone", "Tim Cook", "App Store"],
+    "NVDA": ["Nvidia", "Jensen Huang", "GeForce", "CUDA"],
+    "MSFT": ["Microsoft", "Satya Nadella", "Azure", "Windows", "Copilot"],
+    "GOOGL": ["Google", "Alphabet", "Sundar Pichai", "YouTube", "Gemini"],
+    "AMZN": ["Amazon", "Andy Jassy", "AWS", "Prime"],
+    "TSLA": ["Tesla", "Elon Musk", "Cybertruck", "Powerwall"],
+    "META": ["Meta", "Facebook", "Mark Zuckerberg", "Instagram", "WhatsApp"],
+    "AMD": ["AMD", "Lisa Su", "Ryzen", "Radeon"],
+    "INTC": ["Intel", "Pat Gelsinger"],
+    "PLTR": ["Palantir", "Alex Karp"],
+    "COIN": ["Coinbase", "Brian Armstrong"],
+    "CRWD": ["CrowdStrike", "George Kurtz"],
+}
+
 
 def fetch_feed(source_name: str, url: str) -> list[dict]:
     """Fetch and parse a single RSS feed."""
@@ -31,7 +47,7 @@ def fetch_feed(source_name: str, url: str) -> list[dict]:
 
         if getattr(feed, "bozo", 0):
             exc = getattr(feed, "bozo_exception", None)
-            logger.warning(f"⚠️ {source_name}: feed parse bozo={feed.bozo} exc={exc}")
+            logger.warning(f"{source_name}: feed parse bozo={feed.bozo} exc={exc}")
 
         for entry in feed.entries:
             articles.append(
@@ -74,19 +90,27 @@ def fetch_all_news() -> pd.DataFrame:
     return df
 
 
-def filter_by_ticker(df: pd.DataFrame, ticker: str, company_name: str = "") -> pd.DataFrame:
+def filter_by_ticker(
+    df: pd.DataFrame,
+    ticker: str,
+    company_name: str = "",
+) -> pd.DataFrame:
     """Filter articles that mention a specific ticker or company."""
     if df.empty:
         return df
 
-    mask = df["title"].str.contains(ticker, case=False, na=False, regex=False) | df[
-        "summary"
-    ].str.contains(ticker, case=False, na=False, regex=False)
-
+    search_terms = [ticker]
     if company_name:
+        search_terms.append(company_name)
+
+    aliases = TICKER_ALIASES.get(ticker.upper(), [])
+    search_terms.extend(aliases)
+
+    mask = pd.Series(False, index=df.index)
+    for term in search_terms:
         mask = mask | (
-            df["title"].str.contains(company_name, case=False, na=False, regex=False)
-            | df["summary"].str.contains(company_name, case=False, na=False, regex=False)
+            df["title"].str.contains(term, case=False, na=False, regex=False)
+            | df["summary"].str.contains(term, case=False, na=False, regex=False)
         )
 
     filtered = df[mask].reset_index(drop=True)

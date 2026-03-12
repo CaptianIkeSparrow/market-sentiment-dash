@@ -154,6 +154,115 @@ python app.py CRWD CrowdStrike
 python app.py --list
 ```
 
+## Command reference
+
+### `app.py` — single ticker, full LLM briefing
+
+```bash
+# Basic usage — ticker must be in TICKER_MAP
+./venv/bin/python app.py NVDA
+./venv/bin/python app.py AAPL
+./venv/bin/python app.py TSLA
+
+# Ticker not in TICKER_MAP — pass company name manually
+./venv/bin/python app.py HIMS "Hims & Hers Health"
+./venv/bin/python app.py HOOD Robinhood
+./venv/bin/python app.py ARM "Arm Holdings"
+
+# See all supported tickers
+./venv/bin/python app.py --list
+```
+
+What it does: Fetches data → runs FinBERT → detects anomalies → generates full LLM analyst briefing. Typical runtime is ~2–3 minutes. LLM cost is usually around ~$0.01 per run (depends on prompt size and model).
+
+### `watchlist.py` — multi-ticker ranked scan, no LLM
+
+```bash
+# Scan all tickers in your WATCHLIST
+./venv/bin/python watchlist.py
+```
+
+What it does: Fetches data → runs FinBERT → ranks all tickers bearish to bullish → prints a signal table. Typical runtime is ~3–5 minutes for 10 tickers. No LLM cost.
+
+### Editing your watchlist
+
+Open `src/config/tickers.py` and edit `WATCHLIST`:
+
+```python
+WATCHLIST = [
+    "NVDA",  # add or remove tickers here
+    "AAPL",
+    "TSLA",
+]
+```
+
+Adding a new ticker not in `TICKER_MAP`:
+
+```python
+# Step 1 — add to TICKER_MAP
+"HIMS": "Hims & Hers Health",
+
+# Step 2 — add to WATCHLIST
+"HIMS",
+```
+
+### Git commands
+
+```bash
+# Save and push your work
+git add .
+git commit -m "describe what you changed"
+git push
+
+# Check what files you've changed
+git status
+
+# See your commit history
+git log --oneline
+```
+
+### Environment
+
+```bash
+# Activate your venv (run this every time you open a new terminal)
+source venv/bin/activate
+
+# Verify you're using the right python
+which python
+
+# Install a new package
+./venv/bin/pip install package-name
+
+# Check installed packages
+./venv/bin/pip list
+```
+
+### Troubleshooting
+
+```bash
+# Check your API keys are loading (does not print the full key)
+./venv/bin/python -c "
+from dotenv import load_dotenv; import os; load_dotenv()
+key = os.getenv('ANTHROPIC_API_KEY')
+print('Anthropic:', 'FOUND' if key else 'NOT FOUND')
+"
+
+# Test Anthropic API is working (update model name if needed)
+./venv/bin/python -c "
+from dotenv import load_dotenv; import os; load_dotenv()
+import anthropic
+client = anthropic.Anthropic(api_key=os.getenv('ANTHROPIC_API_KEY'))
+r = client.messages.create(model='claude-haiku-4-5-20251001', max_tokens=10, messages=[{'role':'user','content':'hi'}])
+print(r.content[0].text)
+"
+
+# Run a specific test notebook
+./venv/bin/python notebooks/test_ingestion.py
+./venv/bin/python notebooks/test_sentiment.py
+./venv/bin/python notebooks/test_anomaly.py
+./venv/bin/python notebooks/test_briefing.py
+```
+
 ## Supported Tickers
 
 80+ tickers pre-mapped across sectors. Run `python app.py --list` to see all of them, or edit `src/config/tickers.py` to add your own.

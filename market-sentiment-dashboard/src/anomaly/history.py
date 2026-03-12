@@ -22,8 +22,8 @@ def simulate_historical_scores(
 
 def simulate_historical_counts(
     days: int = 30,
-    base_mean: float = 80,
-    base_std: float = 20,
+    base_mean: float = 125,
+    base_std: float = 15,
     seed: int = 42,
 ) -> list[int]:
     """
@@ -53,4 +53,3 @@ def build_history_dataframe(
             "article_count": counts,
         }
     )
-

@@ -26,6 +26,17 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 logger.remove()
 
 
+def action_from_score(score: float) -> str:
+    """
+    Convert a sentiment score into a simple action label.
+    """
+    if score > 0.15:
+        return "BUY"
+    if score < -0.15:
+        return "SELL"
+    return "HOLD"
+
+
 def analyze_ticker(
     ticker: str,
     company_name: str,
@@ -118,6 +129,10 @@ def print_rankings(results: list[dict]):
 
     print(f"{divider}")
 
+    print("\n  Score legend:")
+    print("  - Range: -1.0 (very bearish) to +1.0 (very bullish)")
+    print("  - Neutral band: -0.15 to +0.15 (roughly 'hold')")
+
     bullish = sum(1 for r in results if r["signal"] == "bullish")
     bearish = sum(1 for r in results if r["signal"] == "bearish")
     neutral = len(results) - bullish - bearish
@@ -136,15 +151,20 @@ def print_detail_table(results: list[dict]):
 
     print("  DETAILED BREAKDOWN")
     print("-" * 75)
-    print(f"  {'TICKER':<7} {'POS%':<8} {'NEG%':<8} {'NEU%':<8} {'VELOCITY':<12} {'ARTICLES'}")
+    print(
+        f"  {'TICKER':<7} {'POS%':<8} {'NEG%':<8} {'NEU%':<8} "
+        f"{'VELOCITY':<12} {'ARTICLES':<9} {'ACTION'}"
+    )
     print("-" * 75)
 
     for r in results:
         velocity_str = f"{r['velocity']:+.4f}"
         velocity_dir = "UP" if r["velocity"] > 0 else "DOWN"
+        action = action_from_score(float(r["score"]))
         print(
             f"  {r['ticker']:<7} {r['positive_pct']:<8} {r['negative_pct']:<8} "
-            f"{r['neutral_pct']:<8} {velocity_str} {velocity_dir:<4} {r['total_articles']}"
+            f"{r['neutral_pct']:<8} {velocity_str} {velocity_dir:<4} "
+            f"{r['total_articles']:<9} {action}"
         )
 
     print("-" * 75)
@@ -185,4 +205,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
