@@ -1,8 +1,8 @@
 # Data fetching
 requests==2.31.0
 yfinance==0.2.36
-praw==7.7.1
 newsapi-python==0.2.7
+feedparser==6.0.10
 
 # Data processing
 pandas==2.1.0
