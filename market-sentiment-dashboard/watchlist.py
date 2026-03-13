@@ -15,6 +15,7 @@ Usage:
 
 import os
 import sys
+from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -48,6 +49,7 @@ def analyze_ticker(
     """
     from src.ingestion.news_fetcher import fetch_all_news, filter_by_ticker
     from src.ingestion.social_fetcher import fetch_all_social
+    from src.ingestion.price_fetcher import fetch_price_history
     from src.nlp.sentiment import analyze_dataframe
     from src.nlp.aggregator import aggregate_sentiment
     from src.anomaly.detector import detect_sentiment_anomaly, detect_volume_anomaly
@@ -64,6 +66,9 @@ def analyze_ticker(
 
         scored_df = analyze_dataframe(all_df, analyzer)
         report = aggregate_sentiment(scored_df, ticker)
+
+        price_df = fetch_price_history(ticker, period="1mo")
+        entry_price = float(price_df["Close"].iloc[-1]) if not price_df.empty else None
 
         historical_scores = simulate_historical_scores(days=30)
         historical_counts = simulate_historical_counts(days=30)
@@ -95,6 +100,7 @@ def analyze_ticker(
             "total_articles": report["total_articles"],
             "anomaly": anomaly_display,
             "anomaly_severity": worst,
+            "entry_price": entry_price,
         }
 
     except Exception as e:
@@ -171,6 +177,34 @@ def print_detail_table(results: list[dict]):
     print("  Velocity: UP = sentiment improving, DOWN = deteriorating\n")
 
 
+def save_signals_to_db(results: list[dict]) -> None:
+    """
+    Persist bullish/bearish signals to SQLite so they can be tracked over time.
+    """
+    from src.database.db import get_connection, init_db, insert_signal_alert
+
+    date_detected = datetime.now().date().isoformat()
+
+    conn = get_connection()
+    init_db(conn)
+
+    for r in results:
+        if r.get("signal") not in ["bullish", "bearish"]:
+            continue
+
+        insert_signal_alert(
+            conn=conn,
+            ticker=r["ticker"],
+            company=r["company"],
+            signal=str(r["signal"]).upper(),
+            score=float(r["score"]),
+            price_at_signal=r.get("entry_price"),
+            date_detected=date_detected,
+        )
+
+    conn.close()
+
+
 def main():
     from src.config.tickers import get_watchlist
     from src.nlp.sentiment import FinBERTAnalyzer
@@ -199,6 +233,7 @@ def main():
 
     results.sort(key=lambda x: x["score"])
 
+    save_signals_to_db(results)
     print_rankings(results)
     print_detail_table(results)
 

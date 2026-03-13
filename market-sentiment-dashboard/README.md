@@ -182,7 +182,55 @@ What it does: Fetches data → runs FinBERT → detects anomalies → generates 
 ./venv/bin/python watchlist.py
 ```
 
-What it does: Fetches data → runs FinBERT → ranks all tickers bearish to bullish → prints a signal table. Typical runtime is ~3–5 minutes for 10 tickers. No LLM cost.
+What it does: Fetches data → runs FinBERT → ranks all tickers bearish to bullish → prints a signal table. It also saves bullish/bearish signals to SQLite so they can be tracked over time. Typical runtime is ~3–5 minutes for 10 tickers. No LLM cost.
+
+### Signal tracking (SQLite)
+
+This project stores signals and their follow-on performance in a local SQLite database at `data/signals.db`.
+
+Daily flow:
+
+1. Run `watchlist.py` to write new bullish/bearish signals into `signal_alerts` (including the entry price at the time of detection).
+2. A scheduled job runs `tracker_update.py` once per day to append a row to `price_tracking` for each active signal (less than 14 days old). After 14 days, the signal is marked complete and no longer updated.
+3. Run `tracker.py` anytime to view the latest outcome table.
+
+Retention:
+
+- Signals are updated for **14 days** (the “active” window).
+- The database keeps rows **indefinitely** until you delete/clear `data/signals.db`.
+
+Commands:
+
+```bash
+# Save new signals (bullish/bearish) to SQLite
+./venv/bin/python watchlist.py
+
+# Run the daily update manually (records today's price + % change)
+./venv/bin/python tracker_update.py
+
+# View the latest outcome per signal
+./venv/bin/python tracker.py
+```
+
+To schedule the daily updater on macOS (cron):
+
+```bash
+# Installs a weekday cron entry (America/Denver 14:05) that runs tracker_update.py
+bash setup_cron.sh
+
+# Verify it was installed
+crontab -l
+```
+
+Clearing the database:
+
+```bash
+# Delete the DB file (recommended)
+rm -f data/signals.db
+
+# Optional: clear the updater log
+rm -f data/tracker_update.log
+```
 
 ### Editing your watchlist
 
@@ -309,6 +357,10 @@ Both sentiment score and article volume are monitored independently. A volume sp
 ```text
 market-sentiment-dashboard/
 ├── app.py                    # Main CLI entry point
+├── watchlist.py               # Multi-ticker ranked scan (no LLM)
+├── tracker.py                 # View signal outcomes (SQLite)
+├── tracker_update.py          # Daily updater for price tracking
+├── setup_cron.sh              # Installs daily cron job for tracker_update.py
 ├── requirements.txt
 ├── .env                      # API keys (not committed)
 ├── .gitignore
@@ -323,6 +375,8 @@ market-sentiment-dashboard/
 │   ├── anomaly/
 │   │   ├── detector.py
 │   │   └── history.py
+│   ├── database/
+│   │   └── db.py
 │   ├── llm/
 │   │   └── briefing.py
 │   └── config/
@@ -333,8 +387,7 @@ market-sentiment-dashboard/
 │   ├── test_anomaly.py
 │   └── test_briefing.py
 └── data/
-    ├── raw/
-    └── processed/
+    └── signals.db             # SQLite database (created at runtime)
 ```
 
 ## Limitations & Future Work

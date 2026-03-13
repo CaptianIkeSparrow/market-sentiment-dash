@@ -94,18 +94,123 @@ TICKER_MAP = {
     "VTI": "Total Stock Market",
     "GLD": "Gold",
     "TLT": "20yr Treasury Bonds",
+    "UCO": "proshares ultra bloomberg crude oil",
 
     # ── Crypto-adjacent ────────────────────────────────────────
     "MSTR": "MicroStrategy",
     "MARA": "Marathon Digital",
     "RIOT": "Riot Platforms",
+#SECOND BLOCK MAY be more overlap fix later 
+    # ── Energy — Oil shock beneficiaries ──────────────────────────────────
+"XOM": "ExxonMobil",
+"CVX": "Chevron",
+"COP": "ConocoPhillips",
+"OXY": "Occidental Petroleum",
+"PSX": "Phillips 66",
+"MPC": "Marathon Petroleum",
+"VLO": "Valero Energy",
+"EOG": "EOG Resources",
+"DVN": "Devon Energy",
+"PXD": "Pioneer Natural Resources",
+
+# ── LNG ───────────────────────────────────────────────────────────────
+"LNG": "Cheniere Energy",
+"AR": "Antero Resources",
+"EQT": "EQT Corporation",
+"CTRA": "Coterra Energy",
+"RRC": "Range Resources",
+
+# ── Oil Services ──────────────────────────────────────────────────────
+"HAL": "Halliburton",
+"BKR": "Baker Hughes",
+"NOV": "NOV Inc",
+"WFRD": "Weatherford International",
+
+# ── Defense ───────────────────────────────────────────────────────────
+"LMT": "Lockheed Martin",
+"NOC": "Northrop Grumman",
+"RTX": "RTX Corporation",
+"GD": "General Dynamics",
+"LHX": "L3Harris Technologies",
+"KTOS": "Kratos Defense",
+"AXON": "Axon Enterprise",
+"LDOS": "Leidos",
+"SAIC": "Science Applications International",
+"HII": "Huntington Ingalls Industries",
+"TDG": "TransDigm Group",
+"HEI": "HEICO Corporation",
+
+# ── Airlines ──────────────────────────────────────────────────────────
+"DAL": "Delta Air Lines",
+"UAL": "United Airlines",
+"AAL": "American Airlines",
+"LUV": "Southwest Airlines",
+"JBLU": "JetBlue Airways",
+"ALK": "Alaska Air Group",
+
+# ── Biotech ───────────────────────────────────────────────────────────
+"BNTX": "BioNTech",
+"NVAX": "Novavax",
+"VRTX": "Vertex Pharmaceuticals",
+"REGN": "Regeneron",
+"BIIB": "Biogen",
+"IONS": "Ionis Pharmaceuticals",
+"CRSP": "CRISPR Therapeutics",
+"BEAM": "Beam Therapeutics",
+"EDIT": "Editas Medicine",
+
+# ── Gold & Miners ─────────────────────────────────────────────────────
+"GDX": "VanEck Gold Miners ETF",
+"GDXJ": "VanEck Junior Gold Miners ETF",
+"NEM": "Newmont Corporation",
+"AEM": "Agnico Eagle Mines",
+"GOLD": "Barrick Gold",
+"KGC": "Kinross Gold",
+
+# ── Utilities ─────────────────────────────────────────────────────────
+"NEE": "NextEra Energy",
+"SO": "Southern Company",
+"DUK": "Duke Energy",
+"AEP": "American Electric Power",
+"EXC": "Exelon",
+
+# ── Bonds ─────────────────────────────────────────────────────────────
+"IEF": "7-10yr Treasury Bond ETF",
+
+# ── Crypto Proxies ────────────────────────────────────────────────────
+"CLSK": "CleanSpark",
+
+# ── Financials ────────────────────────────────────────────────────────
+"AIG": "American International Group",
+"MET": "MetLife",
+"PRU": "Prudential Financial",
 }
 
 # ── Your personal watchlist ────────────────────────────────
 # Edit this list to change which tickers watchlist.py scans
 WATCHLIST = [
-    "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "META", "NVDA",
-    "TSLA"
+    
+    "XOM", "CVX", "COP", "OXY", "PSX",
+    "MPC", "VLO", "EOG", "DVN", "PXD",
+    "LNG", "AR", "EQT", "CTRA", "RRC",
+    "SLB", "HAL", "BKR", "NOV", "WFRD",
+    "LMT", "NOC", "RTX", "GD", "LHX",
+    "KTOS", "AXON", "LDOS", "SAIC", "HII",
+    "TDG", "HEI", "BA",
+    "DAL", "UAL", "AAL", "LUV", "JBLU", "ALK",
+    "MRNA", "BNTX", "NVAX", "VRTX", "REGN",
+    "BIIB", "IONS", "CRSP", "BEAM", "EDIT",
+    "GLD", "GDX", "GDXJ", "NEM", "AEM",
+    "GOLD", "KGC",
+    "NEE", "SO", "DUK", "AEP", "EXC",
+    "TLT", "IEF",
+    "NVDA", "AMD", "TSLA", "META", "AMZN",
+    "GOOGL", "MSFT", "AAPL", "NFLX", "CRM",
+    "MSTR", "MARA", "RIOT", "COIN", "CLSK",
+    "PLTR", "CRWD", "NET", "DDOG", "SNOW",
+    "JPM", "BAC", "GS", "MS", "C",
+    "AIG", "MET", "PRU",
+
 ]
 
 
