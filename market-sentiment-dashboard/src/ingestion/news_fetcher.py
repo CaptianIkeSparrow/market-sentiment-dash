@@ -1,93 +1,132 @@
+"""
+src/ingestion/news_fetcher.py
+
+Fetches financial news from:
+  1. General RSS feeds (broad market news)
+  2. Yahoo Finance per-ticker RSS (ticker-specific articles) ← NEW
+"""
+
 import feedparser
 import pandas as pd
-from datetime import datetime, timezone
-from loguru import logger
 import requests
+from loguru import logger
+from datetime import datetime
 
-
+# ── General market RSS feeds ──────────────────────────────────────────────────
 RSS_FEEDS = {
-    "cnbc": "https://www.cnbc.com/id/10001147/device/rss/rss.html",
-    "marketwatch": "https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines",
-    "yahoo_finance": "https://finance.yahoo.com/news/rssindex",
-    "benzinga": "https://www.benzinga.com/feed",
+    "cnbc":           "https://www.cnbc.com/id/10001147/device/rss/rss.html",
+    "marketwatch":    "https://feeds.content.dowjones.io/public/rss/mw_realtimeheadlines",
+    "yahoo_finance":  "https://finance.yahoo.com/news/rssindex",
+    "benzinga":       "https://www.benzinga.com/feed",
     "investor_place": "https://investorplace.com/feed/",
-    "motley_fool": "https://www.fool.com/feeds/index.aspx",
+    "motley_fool":    "https://www.fool.com/feeds/index.aspx",
 }
 
-# Common aliases to search for when RSS headlines don't mention the ticker explicitly.
+# ── Ticker alias map for broader RSS matching ─────────────────────────────────
 TICKER_ALIASES = {
-    "AAPL": ["Apple", "iPhone", "Tim Cook", "App Store"],
-    "NVDA": ["Nvidia", "Jensen Huang", "GeForce", "CUDA"],
-    "MSFT": ["Microsoft", "Satya Nadella", "Azure", "Windows", "Copilot"],
+    "AAPL":  ["Apple", "iPhone", "Tim Cook", "App Store", "MacBook"],
+    "MSFT":  ["Microsoft", "Satya Nadella", "Azure", "Windows", "Copilot"],
     "GOOGL": ["Google", "Alphabet", "Sundar Pichai", "YouTube", "Gemini"],
-    "AMZN": ["Amazon", "Andy Jassy", "AWS", "Prime"],
-    "TSLA": ["Tesla", "Elon Musk", "Cybertruck", "Powerwall"],
-    "META": ["Meta", "Facebook", "Mark Zuckerberg", "Instagram", "WhatsApp"],
-    "AMD": ["AMD", "Lisa Su", "Ryzen", "Radeon"],
-    "INTC": ["Intel", "Pat Gelsinger"],
-    "PLTR": ["Palantir", "Alex Karp"],
-    "COIN": ["Coinbase", "Brian Armstrong"],
-    "CRWD": ["CrowdStrike", "George Kurtz"],
+    "GOOG":  ["Google", "Alphabet", "Sundar Pichai", "YouTube", "Gemini"],
+    "AMZN":  ["Amazon", "Andy Jassy", "AWS", "Prime"],
+    "META":  ["Meta", "Facebook", "Mark Zuckerberg", "Instagram", "WhatsApp"],
+    "NVDA":  ["Nvidia", "Jensen Huang", "GeForce", "CUDA", "H100"],
+    "TSLA":  ["Tesla", "Elon Musk", "Cybertruck", "Powerwall"],
+    "AMD":   ["AMD", "Lisa Su", "Ryzen", "Radeon"],
+    "INTC":  ["Intel", "Pat Gelsinger"],
+    "PLTR":  ["Palantir", "Alex Karp"],
+    "COIN":  ["Coinbase", "Brian Armstrong"],
+    "CRWD":  ["CrowdStrike", "George Kurtz"],
+    "NFLX":  ["Netflix", "Ted Sarandos"],
+    "JPM":   ["JPMorgan", "Jamie Dimon"],
+    "BAC":   ["Bank of America"],
+    "GS":    ["Goldman Sachs"],
+    "MS":    ["Morgan Stanley"],
+    "LMT":   ["Lockheed Martin"],
+    "NOC":   ["Northrop Grumman"],
+    "RTX":   ["Raytheon", "RTX"],
+    "XOM":   ["ExxonMobil", "Exxon"],
+    "CVX":   ["Chevron"],
+    "MSTR":  ["MicroStrategy", "Michael Saylor"],
+    "MARA":  ["Marathon Digital"],
+    "RIOT":  ["Riot Platforms"],
 }
 
 
-def fetch_feed(source_name: str, url: str) -> list[dict]:
-    """Fetch and parse a single RSS feed."""
+def fetch_feed(name: str, url: str, timeout: int = 10) -> pd.DataFrame:
+    """Fetch a single RSS feed and return as a DataFrame."""
     try:
-        resp = requests.get(
-            url,
-            headers={
-                "User-Agent": "market-sentiment-dashboard/1.0 (+https://example.com)"
-            },
-            timeout=20,
-        )
-        resp.raise_for_status()
-        feed = feedparser.parse(resp.content)
+        feed = feedparser.parse(url)
         articles = []
-
-        if getattr(feed, "bozo", 0):
-            exc = getattr(feed, "bozo_exception", None)
-            logger.warning(f"{source_name}: feed parse bozo={feed.bozo} exc={exc}")
-
         for entry in feed.entries:
-            articles.append(
-                {
-                    "source": source_name,
-                    "title": entry.get("title", ""),
-                    "summary": entry.get("summary", ""),
-                    "url": entry.get("link", ""),
-                    "published": entry.get("published", ""),
-                    "fetched_at": datetime.now(timezone.utc).isoformat(),
-                }
-            )
-
-        logger.info(f"✅ {source_name}: {len(articles)} articles fetched")
-        return articles
-
+            articles.append({
+                "source":    name,
+                "title":     entry.get("title", ""),
+                "summary":   entry.get("summary", ""),
+                "url":       entry.get("link", ""),
+                "published": entry.get("published", ""),
+            })
+        df = pd.DataFrame(articles)
+        logger.info(f"✅ {name}: {len(df)} articles fetched")
+        return df
     except Exception as e:
-        logger.error(f"Failed to fetch {source_name}: {e}")
-        return []
+        logger.error(f"❌ Failed to fetch {name}: {e}")
+        return pd.DataFrame()
 
 
 def fetch_all_news() -> pd.DataFrame:
-    """Fetch articles from all RSS feeds and return as a DataFrame."""
-    all_articles = []
+    """Fetch all general RSS feeds and return combined DataFrame."""
+    frames = []
+    for name, url in RSS_FEEDS.items():
+        df = fetch_feed(name, url)
+        if not df.empty:
+            frames.append(df)
 
-    for source_name, url in RSS_FEEDS.items():
-        articles = fetch_feed(source_name, url)
-        all_articles.extend(articles)
+    if not frames:
+        logger.warning("No news articles fetched from any RSS feed")
+        return pd.DataFrame()
 
-    df = pd.DataFrame(all_articles)
+    combined = pd.concat(frames, ignore_index=True)
+    combined = combined.drop_duplicates(subset=["title"]).reset_index(drop=True)
+    logger.info(f"📰 Total articles fetched: {len(combined)}")
+    return combined
 
-    if df.empty:
-        logger.warning("No articles fetched from any source")
+
+def fetch_yahoo_ticker_news(ticker: str) -> pd.DataFrame:
+    """
+    Fetch Yahoo Finance's per-ticker RSS feed.
+    Returns articles specifically about this ticker.
+
+    URL: https://finance.yahoo.com/rss/headline?s=TICKER
+    Free, no auth, no rate limits in practice.
+    """
+    url = f"https://finance.yahoo.com/rss/headline?s={ticker.upper()}"
+    source_name = f"yahoo_{ticker.lower()}"
+
+    try:
+        feed = feedparser.parse(url)
+
+        if not feed.entries:
+            logger.warning(f"  Yahoo ticker feed empty for {ticker}")
+            return pd.DataFrame()
+
+        articles = []
+        for entry in feed.entries:
+            articles.append({
+                "source":    source_name,
+                "title":     entry.get("title", ""),
+                "summary":   entry.get("summary", ""),
+                "url":       entry.get("link", ""),
+                "published": entry.get("published", ""),
+            })
+
+        df = pd.DataFrame(articles)
+        logger.info(f" Yahoo ticker feed ({ticker}): {len(df)} articles fetched")
         return df
 
-    df = df.drop_duplicates(subset=["url"])
-    df = df.sort_values("fetched_at", ascending=False).reset_index(drop=True)
-
-    logger.info(f"Total articles fetched: {len(df)}")
-    return df
+    except Exception as e:
+        logger.error(f"❌ Yahoo ticker feed failed for {ticker}: {e}")
+        return pd.DataFrame()
 
 
 def filter_by_ticker(
@@ -95,24 +134,71 @@ def filter_by_ticker(
     ticker: str,
     company_name: str = "",
 ) -> pd.DataFrame:
-    """Filter articles that mention a specific ticker or company."""
+    """
+    Filter general RSS articles that mention a specific ticker or company.
+    Uses TICKER_ALIASES for broader matching.
+    """
     if df.empty:
         return df
 
-    search_terms = [ticker]
+    # Build full list of search terms
+    search_terms = [ticker.upper()]
     if company_name:
         search_terms.append(company_name)
 
+    # Add aliases
     aliases = TICKER_ALIASES.get(ticker.upper(), [])
     search_terms.extend(aliases)
 
-    mask = pd.Series(False, index=df.index)
+    # Build match mask across all terms
+    mask = pd.Series([False] * len(df), index=df.index)
     for term in search_terms:
         mask = mask | (
-            df["title"].str.contains(term, case=False, na=False, regex=False)
-            | df["summary"].str.contains(term, case=False, na=False, regex=False)
+            df["title"].str.contains(term, case=False, na=False) |
+            df["summary"].str.contains(term, case=False, na=False)
         )
 
     filtered = df[mask].reset_index(drop=True)
-    logger.info(f"Articles mentioning {ticker}: {len(filtered)}")
+    logger.info(f"🔍 General RSS articles mentioning {ticker}: {len(filtered)}")
     return filtered
+
+
+def fetch_all_news_for_ticker(
+    ticker: str,
+    company_name: str = "",
+) -> pd.DataFrame:
+    """
+    Main function to call from the pipeline.
+    Combines:
+      1. General RSS feeds filtered by ticker/aliases
+      2. Yahoo Finance per-ticker RSS (ticker-specific)
+
+    Returns a single deduplicated DataFrame.
+    """
+    # 1. General RSS — broad market news filtered to this ticker
+    general_df = fetch_all_news()
+    filtered_general = filter_by_ticker(general_df, ticker, company_name)
+
+    # 2. Yahoo per-ticker RSS — articles specifically about this ticker
+    yahoo_ticker_df = fetch_yahoo_ticker_news(ticker)
+
+    # 3. Combine and deduplicate
+    frames = []
+    if not filtered_general.empty:
+        frames.append(filtered_general)
+    if not yahoo_ticker_df.empty:
+        frames.append(yahoo_ticker_df)
+
+    if not frames:
+        logger.warning(f"No news articles found for {ticker}")
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True)
+    combined = combined.drop_duplicates(subset=["title"]).reset_index(drop=True)
+
+    logger.info(
+        f"📊 {ticker} total news: {len(combined)} articles "
+        f"(RSS filtered: {len(filtered_general)}, "
+        f"Yahoo ticker: {len(yahoo_ticker_df)})"
+    )
+    return combined
