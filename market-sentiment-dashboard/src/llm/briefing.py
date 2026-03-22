@@ -81,13 +81,13 @@ Write a structured analyst briefing with exactly these four sections:
 
 HEADLINE: (one punchy sentence summarizing the situation)
 
-SITUATION: (2-3 sentences describing what the data shows is happening right now)
+SITUATION: (2-3 sentences describing what the data shows is happening right now, state the date of our stock info)
 
 SENTIMENT ANALYSIS: (2-3 sentences interpreting what the sentiment scores and anomalies mean in plain English)
 
 RISK FLAGS: (2-3 bullet points of specific things to watch)
 
-OUTLOOK: (1-2 sentences forward-looking summary)
+OUTLOOK: (1-2 sentences forward-looking summary. Final sentance state buy, sell or hold and confidence rating out of 10)
 
 Be direct, specific, and professional. Reference actual numbers from the data.
 Do not add any other sections or commentary outside these five."""
@@ -146,12 +146,6 @@ def generate_briefing(
         messages=[{"role": "user", "content": prompt}]
     )
 
-    raw = response.content[0].text
-    logger.info("✅ Briefing generated successfully")
-    print("\n--- RAW LLM RESPONSE ---")
-    print(raw)
-    print("--- END RAW ---\n")
-    return parse_briefing(ticker, raw)
 
 
 def parse_briefing(ticker: str, raw_text: str) -> AnalystBriefing:
@@ -233,9 +227,10 @@ def print_briefing(briefing: AnalystBriefing):
     print(f"\n{divider}")
     print(f"  MARKET INTELLIGENCE BRIEFING — {briefing.ticker}")
     print(f"{divider}")
-    print(f"\n{briefing.headline}\n")
-    print(f"SITUATION\n{briefing.situation}\n")
-    print(f"SENTIMENT ANALYSIS\n{briefing.sentiment_analysis}\n")
-    print(f"RISK FLAGS\n{briefing.risk_flags}\n")
-    print(f"OUTLOOK\n{briefing.outlook}")
+    print(f"\n📌 {briefing.headline}\n")
+    print(f"📊 SITUATION\n{briefing.situation}\n")
+    print(f"🧠 SENTIMENT ANALYSIS\n{briefing.sentiment_analysis}\n")
+    print(f"⚠️  RISK FLAGS\n{briefing.risk_flags}\n")
+    print(f"🔭 OUTLOOK\n{briefing.outlook}")
     print(f"\n{divider}\n")
+

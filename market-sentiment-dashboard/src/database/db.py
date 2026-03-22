@@ -201,3 +201,143 @@ def get_latest_tracking_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         """
     )
     return list(cur.fetchall())
+
+
+def get_active_signals_grouped(max_age_days: int = 14) -> list[dict]:
+    """
+    Returns one row per ticker: earliest active signal date, latest price update,
+    and max favorable move seen so far.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        WITH active AS (
+            SELECT *
+            FROM signal_alerts
+            WHERE is_complete = 0
+              AND date(date_detected) >= date('now', ?)
+        ),
+        earliest_date AS (
+            SELECT ticker, MIN(date_detected) AS min_date
+            FROM active
+            GROUP BY ticker
+        ),
+        earliest AS (
+            SELECT a.*
+            FROM active a
+            JOIN earliest_date ed
+              ON ed.ticker = a.ticker AND ed.min_date = a.date_detected
+            JOIN (
+                SELECT ticker, date_detected, MIN(id) AS min_id
+                FROM active
+                GROUP BY ticker, date_detected
+            ) mi
+              ON mi.ticker = a.ticker AND mi.date_detected = a.date_detected AND mi.min_id = a.id
+        ),
+        latest_pt AS (
+            SELECT pt1.*
+            FROM price_tracking pt1
+            JOIN (
+                SELECT signal_id, MAX(date(date)) AS max_date
+                FROM price_tracking
+                GROUP BY signal_id
+            ) mx
+              ON mx.signal_id = pt1.signal_id AND date(pt1.date) = mx.max_date
+        )
+        SELECT
+            e.ticker,
+            e.company,
+            e.signal,
+            e.id,
+            e.date_detected AS date_detected,
+            e.price_at_signal,
+            lp.price AS current_price,
+            lp.pct_change,
+            lp.days_since_signal,
+            (
+                SELECT MAX(
+                    CASE
+                        WHEN e.signal = 'BULLISH' THEN pt2.pct_change
+                        WHEN e.signal = 'BEARISH' THEN -pt2.pct_change
+                        ELSE NULL
+                    END
+                )
+                FROM price_tracking pt2
+                WHERE pt2.signal_id = e.id
+            ) AS max_move,
+            (
+                CASE
+                    WHEN e.signal = 'BEARISH' THEN -COALESCE(lp.pct_change, 0)
+                    ELSE COALESCE(lp.pct_change, 0)
+                END
+            ) AS favorable_move
+        FROM earliest e
+        LEFT JOIN latest_pt lp
+          ON lp.signal_id = e.id
+        ORDER BY e.signal, favorable_move DESC
+        """,
+        (f"-{int(max_age_days)} days",),
+    )
+
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_completed_signals_grouped() -> list[dict]:
+    """
+    Returns one row per ticker+signal+date_detected for completed signals,
+    with final price, final return, and max favorable move during the tracking window.
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        WITH completed AS (
+            SELECT *
+            FROM signal_alerts
+            WHERE is_complete = 1
+        ),
+        latest_pt AS (
+            SELECT pt1.*
+            FROM price_tracking pt1
+            JOIN (
+                SELECT signal_id, MAX(date(date)) AS max_date
+                FROM price_tracking
+                GROUP BY signal_id
+            ) mx
+              ON mx.signal_id = pt1.signal_id AND date(pt1.date) = mx.max_date
+        )
+        SELECT
+            sa.ticker,
+            sa.company,
+            sa.signal,
+            sa.id,
+            sa.date_detected,
+            sa.price_at_signal,
+            lp.price AS final_price,
+            lp.pct_change AS final_pct,
+            (
+                SELECT MAX(
+                    CASE
+                        WHEN sa.signal = 'BULLISH' THEN pt2.pct_change
+                        WHEN sa.signal = 'BEARISH' THEN -pt2.pct_change
+                        ELSE NULL
+                    END
+                )
+                FROM price_tracking pt2
+                WHERE pt2.signal_id = sa.id
+            ) AS max_move
+        FROM completed sa
+        LEFT JOIN latest_pt lp
+          ON lp.signal_id = sa.id
+        ORDER BY date(sa.date_detected) DESC, sa.id DESC
+        """
+    )
+
+    rows = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return rows

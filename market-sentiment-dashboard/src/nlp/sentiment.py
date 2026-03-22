@@ -8,6 +8,24 @@ import re
 MODEL_NAME = "ProsusAI/finbert"
 
 
+def sentiment_bucket_5(score: float) -> str:
+    """
+    Bucket a continuous sentiment score into 5 labels.
+
+    Score is expected to be in [-1, 1], typically computed as:
+        positive_prob - negative_prob
+    """
+    if score <= -0.4:
+        return "very_bear"
+    if score <= -0.15:
+        return "bear"
+    if score < 0.15:
+        return "neutral"
+    if score < 0.4:
+        return "bull"
+    return "very_bull"
+
+
 def clean_financial_text(text: str) -> str:
     """Clean social media financial text before sentiment analysis."""
     if not text:
@@ -74,9 +92,13 @@ class FinBERTAnalyzer:
 
         sentiment = max(scores, key=scores.get)
         confidence = round(float(max(probs)), 4)
+        score = round(float(scores["positive"] - scores["negative"]), 4)
+        bucket_5 = sentiment_bucket_5(score)
 
         return {
             "sentiment": sentiment,
+            "bucket_5": bucket_5,
+            "score": score,
             "confidence": confidence,
             **scores,
         }
@@ -118,9 +140,13 @@ class FinBERTAnalyzer:
                 }
                 sentiment = max(scores, key=scores.get)
                 confidence = round(float(max(prob_list)), 4)
+                score = round(float(scores["positive"] - scores["negative"]), 4)
+                bucket_5 = sentiment_bucket_5(score)
                 results.append(
                     {
                         "sentiment": sentiment,
+                        "bucket_5": bucket_5,
+                        "score": score,
                         "confidence": confidence,
                         **scores,
                     }
